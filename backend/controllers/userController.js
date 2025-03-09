@@ -1,5 +1,9 @@
 const User = require("../models/User");
 const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
+const Book = require("../models/Book");
+
 
 
 const getUserProfile = async (req , res) => {
@@ -30,12 +34,28 @@ const deleteUser = async (req , res) => {
             return res.status(400).json({ message : "Invalid UserId" });
         }
 
-        const user = User.findById(userId);
+        const user = await User.findById(userId);
         if(!user){
             return res.status(404).json({ message: "User not found" });
         }
 
-        if(user.role == "author"){
+        if(user.role === "author"){
+            const books = await Book.find({ author : userId });
+
+            books.forEach((book) => {
+                const coverImagePath = path.join(__dirname, "..", book.coverImage);
+                if (fs.existsSync(coverImagePath)) {
+                    fs.unlinkSync(coverImagePath);
+                }
+
+                if (book.fileUrl) {
+                    const pdfPath = path.join(__dirname, "..", book.fileUrl);
+                    if (fs.existsSync(pdfPath)) {
+                        fs.unlinkSync(pdfPath);
+                    }
+                }
+            })
+
             await Book.deleteMany({ author: userId });
         }
 
