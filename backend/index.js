@@ -24,6 +24,8 @@ app.use("/api/books" , bookRoutes);
 app.use("/api/review" , reviewRoutes);
 app.use("/api/user" , userRoutes);
 
+app.use("/uploads" , express.static("uploads"));
+
 
 
 

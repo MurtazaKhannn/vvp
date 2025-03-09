@@ -1,16 +1,26 @@
 const Book = require("../models/Book.js");
 const mongoose = require("mongoose");
 const User = require("../models/User.js");
+const fs = require("fs");
+const path = require("path");
 
 const createBook = async (req , res) => {
     try {
-        const { title , author , genre , description , coverImage , fileUrl } = req.body ;
-        console.log(title , author , description , genre , coverImage , fileUrl);
+        const { title , author , genre , description } = req.body ;
+        console.log(title , author , description , genre);
 
         if (!mongoose.Types.ObjectId.isValid(author)) {
             return res.status(400).json({ message: "Invalid author ID format" });
         }
         
+        const coverImage = req.files?.coverImage ? `uploads/coverImg/${req.files.coverImage[0].filename}` : null;
+        const fileUrl = req.files?.pdf ? `uploads/pdf/${req.files.pdf[0].filename}` : null;
+
+        if (!coverImage || !fileUrl) {
+            return res.status(400).json({ message: "Cover image and PDF are required" });
+        }
+
+        console.log("Received Data:", { title, author, description, genre, coverImage, fileUrl });
         const book = await Book.create({ title , author : new mongoose.Types.ObjectId(author) , genre , description , coverImage , fileUrl });
 
         await User.findByIdAndUpdate(author , {$push : { books : book._id } });
@@ -52,6 +62,17 @@ const deleteBook = async (req , res) => {
         const book = await Book.findById(bookId);
         if (!book) {
             return res.status(404).json({ message: "Book not found" });
+        }
+
+        const coverImagePath = path.join(__dirname, "..", book.coverImage);
+        const pdfPath = path.join(__dirname, "..", book.fileUrl);
+
+        // Delete files if they exist
+        if (fs.existsSync(coverImagePath)) {
+            fs.unlinkSync(coverImagePath);
+        }
+        if (fs.existsSync(pdfPath)) {
+            fs.unlinkSync(pdfPath);
         }
 
         console.log(userId);
