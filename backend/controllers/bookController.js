@@ -37,4 +37,34 @@ const getBooks = async (req , res) => {
     }
 }
 
-module.exports = { createBook , getBooks } ;
+const deleteBook = async (req , res) => {
+    try {
+        const { bookId } = req.params ;
+        const userId = req.user.id ;
+
+        console.log(bookId);
+
+
+        if (!mongoose.Types.ObjectId.isValid(bookId)) {
+            return res.status(400).json({ message: "Invalid book ID format" });
+        }
+
+        const book = await Book.findById(bookId);
+        if (!book) {
+            return res.status(404).json({ message: "Book not found" });
+        }
+
+        console.log(userId);
+
+        await Book.findByIdAndDelete(bookId);
+        await User.findByIdAndUpdate(userId , {$pull : {books : bookId}});
+
+        res.json({ message : "Book Deleted Successfully"})
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message : "Error Deleting Book"});
+    }
+}
+
+module.exports = { createBook , getBooks , deleteBook } ;
